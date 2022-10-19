@@ -1,18 +1,22 @@
 syntax = "proto3";
 
 package ChittyChat;
+option go_package = "github.com/Mlth/Chitty-chat;chat";
 
-option go_package = "proto/proto";
-
-message AskForTimeMessage {
-  int64 clientId = 1;
+message writtenMessage {
+  string name = 1;
+  string message = 2;
+  string timeStamp = 3;
+  int32 id = 4;
 }
 
-message TimeMessage {
-  string serverName = 1;
-  string time = 2;
+message emptyMessage {
+
 }
 
-service TimeAsk {
-  rpc AskForTime(AskForTimeMessage) returns (TimeMessage);
+service chat {
+  rpc RecieveMessage(emptyMessage) returns (writtenMessage);
+  rpc SendMessage(writtenMessage) returns (writtenMessage);
+  rpc LeaveServer(writtenMessage) returns (writtenMessage);
+  rpc JoinServer(writtenMessage) returns (writtenMessage);
 }
