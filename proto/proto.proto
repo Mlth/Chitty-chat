@@ -10,13 +10,20 @@ message writtenMessage {
   int32 id = 4;
 }
 
+message joinMessage {
+  string name = 1;
+}
+
+message leaveMessage {
+  int32 id = 1;
+}
+
 message emptyMessage {
 
 }
 
 service chat {
-  rpc RecieveMessage(emptyMessage) returns (writtenMessage);
-  rpc SendMessage(writtenMessage) returns (writtenMessage);
-  rpc LeaveServer(writtenMessage) returns (writtenMessage);
-  rpc JoinServer(writtenMessage) returns (writtenMessage);
+  rpc SendMessage(stream writtenMessage) returns (emptyMessage);
+  rpc LeaveServer(leaveMessage) returns (emptyMessage);
+  rpc JoinServer(joinMessage) returns (stream writtenMessage);
 }

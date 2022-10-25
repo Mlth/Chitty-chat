@@ -34,23 +34,25 @@ func main() {
 
 func JoinServer(c chat.ChatClient) {
 	// Between the curly brackets are nothing, because the .proto file expects no input.
-	message := chat.WrittenMessage{Name: name}
+	message := chat.JoinMessage{Name: name}
 
 	response, err := c.JoinServer(context.Background(), &message)
 	if err != nil {
 		log.Fatalf("Error when calling GetTime: %s", err)
 	}
 
-	var responseName string = response.Name
-	id = response.Id
-	log.Printf("%s has joined the server with id: %d", responseName, id)
+	for {
+		var responseMessage, _ = response.Recv()
+
+		log.Printf(responseMessage.Message)
+	}
 }
 
-func SendMessage(c chat.ChatClient, inputMessage string) {
+/*func SendMessage(c chat.ChatClient, inputMessage string) {
 	message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: "", Id: id}
 
 	_, err := c.SendMessage(context.Background(), &message)
 	if err != nil {
 		log.Fatalf("Error when calling GetTime: %s", err)
 	}
-}
+}*/

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log"
 	"net"
 
@@ -12,23 +11,23 @@ import (
 var idCount int32 = 0
 
 type ChittyChatServer struct {
-	chat.UnimplementedChatServer
+	chat.ChatServer
 }
+
+var streams = make([]chat.Chat_JoinServerServer, 0)
 
 // Might give two users the same id
-func (s *ChittyChatServer) JoinServer(ctx context.Context, in *chat.WrittenMessage) (*chat.WrittenMessage, error) {
+func (s *ChittyChatServer) JoinServer(in *chat.JoinMessage, stream chat.Chat_JoinServerServer) error {
 	log.Printf("%s joined server. They have been assigned id: %d", in.Name, idCount)
-	idCount++
-	return &chat.WrittenMessage{Name: in.Name, Message: " ", TimeStamp: " ", Id: idCount - 1}, nil
-}
+	//idCount++
 
-func (s *ChittyChatServer) LeaveServer(ctx context.Context, in *chat.WrittenMessage) (*chat.WrittenMessage, error) {
-	log.Printf("%s left the server", in.Name)
-	return &chat.WrittenMessage{Name: in.Name, Message: " ", TimeStamp: " ", Id: in.Id}, nil
-}
+	var joinMessage = in.Name + " joined the server"
+	stream.Send(&chat.WrittenMessage{Message: joinMessage})
+	streams = append(streams, stream)
 
-func (s *ChittyChatServer) SendMessage(ctx context.Context, in *chat.WrittenMessage) (*chat.WrittenMessage, error) {
+	for {
 
+	}
 }
 
 func main() {
@@ -39,7 +38,6 @@ func main() {
 	}
 	grpcServer := grpc.NewServer()
 	chat.RegisterChatServer(grpcServer, &ChittyChatServer{})
-
 	if err := grpcServer.Serve(list); err != nil {
 		log.Fatalf("failed to server %v", err)
 	}
