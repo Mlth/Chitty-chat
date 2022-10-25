@@ -22,9 +22,9 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ChatClient interface {
-	SendMessage(ctx context.Context, opts ...grpc.CallOption) (Chat_SendMessageClient, error)
+	SendMessage(ctx context.Context, in *WrittenMessage, opts ...grpc.CallOption) (*EmptyMessage, error)
 	LeaveServer(ctx context.Context, in *LeaveMessage, opts ...grpc.CallOption) (*EmptyMessage, error)
-	JoinServer(ctx context.Context, in *JoinMessage, opts ...grpc.CallOption) (Chat_JoinServerClient, error)
+	JoinServer(ctx context.Context, in *WrittenMessage, opts ...grpc.CallOption) (Chat_JoinServerClient, error)
 }
 
 type chatClient struct {
@@ -35,38 +35,13 @@ func NewChatClient(cc grpc.ClientConnInterface) ChatClient {
 	return &chatClient{cc}
 }
 
-func (c *chatClient) SendMessage(ctx context.Context, opts ...grpc.CallOption) (Chat_SendMessageClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Chat_ServiceDesc.Streams[0], "/ChittyChat.chat/SendMessage", opts...)
+func (c *chatClient) SendMessage(ctx context.Context, in *WrittenMessage, opts ...grpc.CallOption) (*EmptyMessage, error) {
+	out := new(EmptyMessage)
+	err := c.cc.Invoke(ctx, "/ChittyChat.chat/SendMessage", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &chatSendMessageClient{stream}
-	return x, nil
-}
-
-type Chat_SendMessageClient interface {
-	Send(*WrittenMessage) error
-	CloseAndRecv() (*EmptyMessage, error)
-	grpc.ClientStream
-}
-
-type chatSendMessageClient struct {
-	grpc.ClientStream
-}
-
-func (x *chatSendMessageClient) Send(m *WrittenMessage) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *chatSendMessageClient) CloseAndRecv() (*EmptyMessage, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(EmptyMessage)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 func (c *chatClient) LeaveServer(ctx context.Context, in *LeaveMessage, opts ...grpc.CallOption) (*EmptyMessage, error) {
@@ -78,8 +53,8 @@ func (c *chatClient) LeaveServer(ctx context.Context, in *LeaveMessage, opts ...
 	return out, nil
 }
 
-func (c *chatClient) JoinServer(ctx context.Context, in *JoinMessage, opts ...grpc.CallOption) (Chat_JoinServerClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Chat_ServiceDesc.Streams[1], "/ChittyChat.chat/JoinServer", opts...)
+func (c *chatClient) JoinServer(ctx context.Context, in *WrittenMessage, opts ...grpc.CallOption) (Chat_JoinServerClient, error) {
+	stream, err := c.cc.NewStream(ctx, &Chat_ServiceDesc.Streams[0], "/ChittyChat.chat/JoinServer", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -114,9 +89,9 @@ func (x *chatJoinServerClient) Recv() (*WrittenMessage, error) {
 // All implementations must embed UnimplementedChatServer
 // for forward compatibility
 type ChatServer interface {
-	SendMessage(Chat_SendMessageServer) error
+	SendMessage(context.Context, *WrittenMessage) (*EmptyMessage, error)
 	LeaveServer(context.Context, *LeaveMessage) (*EmptyMessage, error)
-	JoinServer(*JoinMessage, Chat_JoinServerServer) error
+	JoinServer(*WrittenMessage, Chat_JoinServerServer) error
 	mustEmbedUnimplementedChatServer()
 }
 
@@ -124,13 +99,13 @@ type ChatServer interface {
 type UnimplementedChatServer struct {
 }
 
-func (UnimplementedChatServer) SendMessage(Chat_SendMessageServer) error {
-	return status.Errorf(codes.Unimplemented, "method SendMessage not implemented")
+func (UnimplementedChatServer) SendMessage(context.Context, *WrittenMessage) (*EmptyMessage, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SendMessage not implemented")
 }
 func (UnimplementedChatServer) LeaveServer(context.Context, *LeaveMessage) (*EmptyMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LeaveServer not implemented")
 }
-func (UnimplementedChatServer) JoinServer(*JoinMessage, Chat_JoinServerServer) error {
+func (UnimplementedChatServer) JoinServer(*WrittenMessage, Chat_JoinServerServer) error {
 	return status.Errorf(codes.Unimplemented, "method JoinServer not implemented")
 }
 func (UnimplementedChatServer) mustEmbedUnimplementedChatServer() {}
@@ -146,30 +121,22 @@ func RegisterChatServer(s grpc.ServiceRegistrar, srv ChatServer) {
 	s.RegisterService(&Chat_ServiceDesc, srv)
 }
 
-func _Chat_SendMessage_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ChatServer).SendMessage(&chatSendMessageServer{stream})
-}
-
-type Chat_SendMessageServer interface {
-	SendAndClose(*EmptyMessage) error
-	Recv() (*WrittenMessage, error)
-	grpc.ServerStream
-}
-
-type chatSendMessageServer struct {
-	grpc.ServerStream
-}
-
-func (x *chatSendMessageServer) SendAndClose(m *EmptyMessage) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *chatSendMessageServer) Recv() (*WrittenMessage, error) {
-	m := new(WrittenMessage)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _Chat_SendMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(WrittenMessage)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(ChatServer).SendMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/ChittyChat.chat/SendMessage",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ChatServer).SendMessage(ctx, req.(*WrittenMessage))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _Chat_LeaveServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -191,7 +158,7 @@ func _Chat_LeaveServer_Handler(srv interface{}, ctx context.Context, dec func(in
 }
 
 func _Chat_JoinServer_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(JoinMessage)
+	m := new(WrittenMessage)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
@@ -219,16 +186,15 @@ var Chat_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*ChatServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "SendMessage",
+			Handler:    _Chat_SendMessage_Handler,
+		},
+		{
 			MethodName: "LeaveServer",
 			Handler:    _Chat_LeaveServer_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "SendMessage",
-			Handler:       _Chat_SendMessage_Handler,
-			ClientStreams: true,
-		},
 		{
 			StreamName:    "JoinServer",
 			Handler:       _Chat_JoinServer_Handler,

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 
@@ -17,17 +18,27 @@ type ChittyChatServer struct {
 var streams = make([]chat.Chat_JoinServerServer, 0)
 
 // Might give two users the same id
-func (s *ChittyChatServer) JoinServer(in *chat.JoinMessage, stream chat.Chat_JoinServerServer) error {
+func (s *ChittyChatServer) JoinServer(in *chat.WrittenMessage, stream chat.Chat_JoinServerServer) error {
 	log.Printf("%s joined server. They have been assigned id: %d", in.Name, idCount)
 	//idCount++
 
-	var joinMessage = in.Name + " joined the server"
-	stream.Send(&chat.WrittenMessage{Message: joinMessage})
 	streams = append(streams, stream)
+	broadcastToAll(&chat.WrittenMessage{Message: in.Name + " has joined the server"})
 
 	for {
 
 	}
+}
+
+func broadcastToAll(in *chat.WrittenMessage) {
+	for i := 0; i < len(streams); i++ {
+		streams[i].Send(in)
+	}
+}
+
+func (s *ChittyChatServer) SendMessage(ctx context.Context, in *chat.WrittenMessage) (*chat.EmptyMessage, error) {
+	broadcastToAll(in)
+	return &chat.EmptyMessage{}, nil
 }
 
 func main() {

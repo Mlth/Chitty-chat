@@ -29,12 +29,17 @@ func main() {
 	//  Create new Client from generated gRPC code from proto
 	c := chat.NewChatClient(conn)
 
-	JoinServer(c)
+	go JoinServer(c)
+	go SendMessage(c)
+
+	for {
+
+	}
 }
 
 func JoinServer(c chat.ChatClient) {
 	// Between the curly brackets are nothing, because the .proto file expects no input.
-	message := chat.JoinMessage{Name: name}
+	message := chat.WrittenMessage{Name: name}
 
 	response, err := c.JoinServer(context.Background(), &message)
 	if err != nil {
@@ -48,11 +53,15 @@ func JoinServer(c chat.ChatClient) {
 	}
 }
 
-/*func SendMessage(c chat.ChatClient, inputMessage string) {
-	message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: "", Id: id}
+func SendMessage(c chat.ChatClient) {
+	for {
+		var inputMessage string
+		fmt.Scan(&inputMessage)
+		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: "", Id: id}
 
-	_, err := c.SendMessage(context.Background(), &message)
-	if err != nil {
-		log.Fatalf("Error when calling GetTime: %s", err)
+		_, err := c.SendMessage(context.Background(), &message)
+		if err != nil {
+			log.Fatalf("Error when sending message: %s", err)
+		}
 	}
-}*/
+}
