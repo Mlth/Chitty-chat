@@ -9,11 +9,11 @@ import (
 	"google.golang.org/grpc"
 )
 
-var id int32 = 0
 var name string = ""
+var clock int32 = 0
 
 func main() {
-	// Creat a virtual RPC Client Connection on port  9080 WithInsecure (because  of http)
+	// Create a virtual RPC Client Connection on port  9080 WithInsecure (because  of http)
 	var conn *grpc.ClientConn
 	conn, err := grpc.Dial(":9080", grpc.WithInsecure())
 	if err != nil {
@@ -30,11 +30,7 @@ func main() {
 	c := chat.NewChatClient(conn)
 
 	go JoinServer(c)
-	go SendMessage(c)
-
-	for {
-
-	}
+	SendMessage(c)
 }
 
 func JoinServer(c chat.ChatClient) {
@@ -49,7 +45,11 @@ func JoinServer(c chat.ChatClient) {
 	for {
 		var responseMessage, _ = response.Recv()
 
-		log.Printf(responseMessage.Message)
+		if responseMessage.Name == "" {
+			log.Printf(responseMessage.Message)
+		} else {
+			log.Printf(responseMessage.Name + ": " + responseMessage.Message)
+		}
 	}
 }
 
@@ -57,7 +57,7 @@ func SendMessage(c chat.ChatClient) {
 	for {
 		var inputMessage string
 		fmt.Scan(&inputMessage)
-		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: "", Id: id}
+		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: ""}
 
 		_, err := c.SendMessage(context.Background(), &message)
 		if err != nil {
