@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	chat "github.com/Mlth/Chitty-chat/proto"
 	"google.golang.org/grpc"
@@ -11,6 +14,7 @@ import (
 
 var name string = ""
 var clock int32 = 0
+var reader = bufio.NewReader(os.Stdin)
 
 func main() {
 	// Create a virtual RPC Client Connection on port  9080 WithInsecure (because  of http)
@@ -24,7 +28,8 @@ func main() {
 	defer conn.Close()
 
 	fmt.Print("Write your name: ")
-	fmt.Scan(&name)
+	name, _ = reader.ReadString('\n')
+	name = strings.TrimSpace(name)
 
 	//  Create new Client from generated gRPC code from proto
 	c := chat.NewChatClient(conn)
@@ -55,10 +60,9 @@ func JoinServer(c chat.ChatClient) {
 
 func SendMessage(c chat.ChatClient) {
 	for {
-		var inputMessage string
-		fmt.Scan(&inputMessage)
+		inputMessage, _ := reader.ReadString('\n')
+		inputMessage = strings.TrimSpace(inputMessage)
 		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: 0}
-
 		_, err := c.SendMessage(context.Background(), &message)
 		if err != nil {
 			log.Fatalf("Error when sending message: %s", err)
