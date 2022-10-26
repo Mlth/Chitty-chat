@@ -19,11 +19,12 @@ var clock int32 = 0
 
 // Might give two users the same id
 func (s *ChittyChatServer) JoinServer(in *chat.WrittenMessage, stream chat.Chat_JoinServerServer) error {
-	log.Printf(in.Name + " has joined the server - timestamp: " + strconv.FormatInt(int64(in.TimeStamp), 10))
+	syncClock(in.TimeStamp)
+	clock += 1
+	log.Printf(in.Name + " has joined the server - timestamp: " + strconv.FormatInt(int64(clock), 10))
 
 	streams = append(streams, stream)
 
-	syncClock(in.TimeStamp)
 	clock += 1
 	broadcastToAll(&chat.WrittenMessage{Message: in.Name + " has joined the server", TimeStamp: clock})
 
@@ -51,9 +52,13 @@ func broadcastToAll(in *chat.WrittenMessage) {
 }
 
 func (s *ChittyChatServer) SendMessage(ctx context.Context, in *chat.WrittenMessage) (*chat.EmptyMessage, error) {
-	log.Printf("recieving message from client: " + in.Name + " - timestamp: " + strconv.FormatInt(int64(in.TimeStamp), 10))
+	//The server recieves input and checks which timestamp is greater. It also increments clock, since it recieves a message.
 	syncClock(in.TimeStamp)
 	clock += 1
+	log.Printf("recieving message from client: " + in.Name + " - timestamp: " + strconv.FormatInt(int64(clock), 10))
+	//Clock is incremented again because the server sends out messages to all clients.
+	clock += 1
+	in = &chat.WrittenMessage{Name: in.Name, Message: in.Message, TimeStamp: clock}
 	broadcastToAll(in)
 	return &chat.EmptyMessage{TimeStamp: clock}, nil
 }
