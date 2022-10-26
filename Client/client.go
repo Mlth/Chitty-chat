@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	chat "github.com/Mlth/Chitty-chat/proto"
@@ -40,7 +41,8 @@ func main() {
 
 func JoinServer(c chat.ChatClient) {
 	// Between the curly brackets are nothing, because the .proto file expects no input.
-	message := chat.WrittenMessage{Name: name}
+	clock += 1
+	message := chat.WrittenMessage{Name: name, TimeStamp: clock}
 
 	response, err := c.JoinServer(context.Background(), &message)
 	if err != nil {
@@ -49,23 +51,35 @@ func JoinServer(c chat.ChatClient) {
 
 	for {
 		var responseMessage, _ = response.Recv()
+		syncClock(responseMessage.TimeStamp)
+		clock += 1
 
 		if responseMessage.Name == "" {
-			log.Printf(responseMessage.Message)
+			log.Printf(responseMessage.Message + ", timestamp: " + strconv.FormatInt(int64(clock), 10))
 		} else {
-			log.Printf(responseMessage.Name + ": " + responseMessage.Message)
+			log.Printf(responseMessage.Name + ": " + responseMessage.Message + ", timestamp: " + strconv.FormatInt(int64(clock), 10))
 		}
 	}
 }
 
 func SendMessage(c chat.ChatClient) {
 	for {
+		clock += 1
 		inputMessage, _ := reader.ReadString('\n')
 		inputMessage = strings.TrimSpace(inputMessage)
-		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: 0}
-		_, err := c.SendMessage(context.Background(), &message)
+		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: clock}
+		messageAck, err := c.SendMessage(context.Background(), &message)
+		syncClock(messageAck.TimeStamp)
+		clock += 1
 		if err != nil {
 			log.Fatalf("Error when sending message: %s", err)
 		}
+	}
+}
+
+func syncClock(timestamp int32) {
+
+	if clock < timestamp {
+		clock = timestamp
 	}
 }

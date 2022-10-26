@@ -10,7 +10,7 @@ message writtenMessage {
 }
 
 message emptyMessage {
-
+  int32 timeStamp = 1;
 }
 
 service chat {
