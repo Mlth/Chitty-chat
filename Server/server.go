@@ -55,6 +55,7 @@ func (s *ChittyChatServer) SendMessage(ctx context.Context, in *chat.WrittenMess
 	//The server recieves input and checks which timestamp is greater. It also increments clock, since it recieves a message.
 	syncClock(in.TimeStamp)
 	clock += 1
+	log.Printf("Recieved message from: " + in.Name + "- timestamp: " + strconv.FormatInt(int64(clock), 10))
 	//Clock is incremented again because the server sends out messages to all clients.
 	clock += 1
 	in = &chat.WrittenMessage{Name: in.Name, Message: in.Message, TimeStamp: clock}
