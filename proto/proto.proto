@@ -6,7 +6,7 @@ option go_package = "github.com/Mlth/Chitty-chat;chat";
 message writtenMessage {
   string name = 1;
   string message = 2;
-  string timeStamp = 3;
+  int32 timeStamp = 3;
 }
 
 message emptyMessage {
