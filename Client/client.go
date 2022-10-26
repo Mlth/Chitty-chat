@@ -57,7 +57,7 @@ func SendMessage(c chat.ChatClient) {
 	for {
 		var inputMessage string
 		fmt.Scan(&inputMessage)
-		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: ""}
+		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: 0}
 
 		_, err := c.SendMessage(context.Background(), &message)
 		if err != nil {
