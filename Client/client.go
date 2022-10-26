@@ -67,11 +67,8 @@ func SendMessage(c chat.ChatClient) {
 		inputMessage, _ := reader.ReadString('\n')
 		inputMessage = strings.TrimSpace(inputMessage)
 		clock += 1
-		log.Printf("Clock før vi sender til server: " + strconv.FormatInt(int64(clock), 10))
 		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: clock}
-		messageAck, err := c.SendMessage(context.Background(), &message)
-		syncClock(messageAck.TimeStamp)
-		clock += 1
+		_, err := c.SendMessage(context.Background(), &message)
 		if err != nil {
 			log.Fatalf("Error when sending message: %s", err)
 		}
