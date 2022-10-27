@@ -39,8 +39,9 @@ func main() {
 	SendMessage(c)
 }
 
+// This functions joins the server and keeps checking if it has recieved a message in its stream
 func JoinServer(c chat.ChatClient) {
-	// Between the curly brackets are nothing, because the .proto file expects no input.
+	//Increments clock because the client sends a message to the server that they want to join
 	clock += 1
 	message := chat.WrittenMessage{Name: name, TimeStamp: clock}
 
@@ -51,6 +52,7 @@ func JoinServer(c chat.ChatClient) {
 
 	for {
 		var responseMessage, _ = response.Recv()
+		//Increments clock again when the client recieves a message through its stream
 		syncClock(responseMessage.TimeStamp)
 		clock += 1
 
@@ -62,6 +64,7 @@ func JoinServer(c chat.ChatClient) {
 	}
 }
 
+// This function waits for the client to type a message in the console, and sends that mesage to the server
 func SendMessage(c chat.ChatClient) {
 	for {
 		inputMessage, _ := reader.ReadString('\n')
@@ -70,6 +73,7 @@ func SendMessage(c chat.ChatClient) {
 			log.Println("Message should be below 128 characters, try again!")
 			continue
 		}
+		//The clock is incremented because the user sends a message.
 		clock += 1
 		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: clock}
 		_, err := c.SendMessage(context.Background(), &message)
@@ -80,7 +84,6 @@ func SendMessage(c chat.ChatClient) {
 }
 
 func syncClock(timestamp int32) {
-
 	if clock < timestamp {
 		clock = timestamp
 	}
