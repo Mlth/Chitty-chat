@@ -66,6 +66,10 @@ func SendMessage(c chat.ChatClient) {
 	for {
 		inputMessage, _ := reader.ReadString('\n')
 		inputMessage = strings.TrimSpace(inputMessage)
+		if len(inputMessage) > 128 {
+			log.Println("Message should be below 128 characters, try again!")
+			continue
+		}
 		clock += 1
 		message := chat.WrittenMessage{Name: name, Message: inputMessage, TimeStamp: clock}
 		_, err := c.SendMessage(context.Background(), &message)
