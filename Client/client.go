@@ -46,7 +46,7 @@ func JoinServer(c chat.ChatClient) {
 
 	response, err := c.JoinServer(context.Background(), &message)
 	if err != nil {
-		log.Fatalf("Error when calling GetTime: %s", err)
+		log.Fatalf("Error when trying to join server: %s", err)
 	}
 
 	for {
